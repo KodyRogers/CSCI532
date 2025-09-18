@@ -1,4 +1,16 @@
 import numpy as np
+import os
+import urllib.request
+
+def download_file():
+    filename = "pathmnist.npz"
+    url = "https://zenodo.org/record/5208230/files/pathmnist.npz"
+    if not os.path.exists(filename):
+        print(f"[INFO] Downloading {filename} from {url} ...")
+        urllib.request.urlretrieve(url, filename)
+        print(f"[DONE] Downloaded {filename}")
+    else:
+        print(f"[INFO] Found existing {filename}, skipping download")
 
 def clean_data(npz_path="pathmnist.npz", out_path="pathmnist_cleaned.npz"):
     # Load original PathMNIST
@@ -35,4 +47,5 @@ def clean_data(npz_path="pathmnist.npz", out_path="pathmnist_cleaned.npz"):
     print(f"[DONE] Cleaned dataset saved to {out_path}")
 
 if __name__ == "__main__":
+    download_file()
     clean_data()
