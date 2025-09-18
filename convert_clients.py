@@ -107,7 +107,7 @@ def main():
         #save_client_data(cid, X_client, y_client, OUT_DIR, original_names=orig_names_client)
         save_client_data(cid, X_client, y_client, OUT_DIR)
 
-    print("\n[DONE] All client datasets saved in clients_data/")
+    print("\nAll client datasets saved in clients_data/")
 
 if __name__ == "__main__":
     main()
