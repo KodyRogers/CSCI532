@@ -49,7 +49,7 @@ def partition_clients(y, num_clients=20, samples_per_label=5):
 # -------------------------
 # Save client data with label-wise numbering
 # -------------------------
-def save_client_data(client_id, X, y, out_dir, original_names=None):
+def save_client_data(client_id, X, y, out_dir):
     pt_path = os.path.join(out_dir, f"client_{client_id}.pt")
     torch.save((X, y), pt_path)
 
@@ -70,14 +70,17 @@ def save_client_data(client_id, X, y, out_dir, original_names=None):
         else:
             pil_img = Image.fromarray(img.squeeze(), mode="L")
 
-        og_name = original_names[i] if original_names is not None else f"og{i}"
-        base_name = os.path.splitext(og_name)[0]
+        #og_name = original_names[i] if original_names is not None else f"og{i}"
+        #base_name = os.path.splitext(og_name)[0]
 
         sample_num = label_counts[label]
         label_counts[label] += 1
 
         # Save image with sample number, label, and original name
-        filename = f"sample_{sample_num}_label{label}_{base_name}.png"
+
+        #Debugging line
+        #filename = f"sample_{sample_num}_label{label}_{base_name}.png"
+        filename = f"sample_{sample_num}_label{label}.png"
         pil_img.save(os.path.join(img_dir, filename))
 
 # -------------------------
@@ -95,13 +98,14 @@ def main():
 
     original_names = [f"Sample_{i}" for i in range(len(X_train))]
 
-    client_indices = partition_clients_fixed_per_label(y_train, num_clients=20, samples_per_label=5)
+    client_indices = partition_clients(y_train, num_clients=20, samples_per_label=5)
 
     print("\nAssigning samples to each client...\n")
     for cid, idxs in enumerate(client_indices):
         X_client, y_client = X_train[idxs], y_train[idxs]
         orig_names_client = [original_names[i] for i in idxs]
-        save_client_data(cid, X_client, y_client, OUT_DIR, original_names=orig_names_client)
+        #save_client_data(cid, X_client, y_client, OUT_DIR, original_names=orig_names_client)
+        save_client_data(cid, X_client, y_client, OUT_DIR)
 
     print("\n[DONE] All client datasets saved in clients_data/")
 
