@@ -17,7 +17,7 @@ LABEL_MAP = {
 }
 
 # Partition clients with 5 samples per label
-def partition_clients_fixed_per_label(y, num_clients=20, samples_per_label=5):
+def partition_clients(y, num_clients=20, samples_per_label=5):
     num_classes = len(np.unique(y))
     
     indices_by_class = {}
