@@ -4,51 +4,82 @@ from PIL import Image
 import os
 import shutil
 
+# PathMNIST label map (9 classes)
+LABEL_MAP = {
+    0: "Adipose tissue",
+    1: "Background",
+    2: "Debris",
+    3: "Lymphocytes",
+    4: "Mucus",
+    5: "Smooth muscle",
+    6: "Normal colon mucosa",
+    7: "Cancer-associated stroma",
+    8: "Colorectal adenocarcinoma epithelium"
+}
+
 # -------------------------
-# Partition into clients
+# Partition aligned across clients
 # -------------------------
-def partition_clients(X, y, num_clients=20):
+def partition_clients_aligned(X, y, num_clients=20):
+    
     num_classes = len(np.unique(y))
-    indices_by_class = {i: np.where(y == i)[0] for i in range(num_classes)}
+    indices_by_class = {}
 
-    client_indices = [[] for _ in range(num_clients)]
-    for label, indices in indices_by_class.items():
-        np.random.shuffle(indices)
-        splits = np.array_split(indices, num_clients)
-        for cid in range(num_clients):
-            client_indices[cid].extend(splits[cid])
+    for class_id in range(num_classes):
+        class_indices = np.where(y == class_id)[0]
+        indices_by_class[class_id] = class_indices
 
-    for cid in range(num_clients):
-        np.random.shuffle(client_indices[cid])
+    # Shuffle each class pool
+    for lable in indices_by_class:
+        np.random.shuffle(indices_by_class[lable])
+
+    # Minimum samples available across all classes
+    lengths = []
+    for indices in indices_by_class.values():
+        lengths.append(len(indices))
+
+    min_per_class = min(lengths)
+
+    # Number of samples per client = min_per_class
+    num_samples = min_per_class
+
+    # Build aligned partitions
+    client_indices = []
+
+    for _ in range(num_clients):
+        client_indices.append([])
+
+    for sample_idx in range(num_samples):
+        # Pick a label in round-robin fashion
+        lable = sample_idx % num_classes
+        # Take one sample for each client from this label pool
+        for client_id in range(num_clients):
+            pick = indices_by_class[lable][sample_idx]
+            client_indices[client_id].append(pick)
 
     return client_indices
 
 # -------------------------
 # Save client data
 # -------------------------
-def save_client_data(cid, X, y, out_dir, num_images=50):
-    # Save as .pt (tuple of numpy arrays)
+def save_client_data(cid, X, y, out_dir, num_images):
     pt_path = os.path.join(out_dir, f"client_{cid}.pt")
     torch.save((X, y), pt_path)
-    print(f"[SAVED] {pt_path}")
 
-    # Save sample PNGs
     img_dir = os.path.join(out_dir, f"client_{cid}_images")
     os.makedirs(img_dir, exist_ok=True)
 
     for i in range(min(num_images, len(X))):
-        img = (X[i] * 255).astype(np.uint8)  # back to [0,255] for saving
+        img = (X[i] * 255).astype(np.uint8)
         label = y[i]
 
-        # Handle grayscale vs RGB
-        if img.shape[-1] == 3:  # HWC RGB
+        # Convert to image
+        if img.shape[-1] == 3:
             pil_img = Image.fromarray(img)
-        else:  # Grayscale (H, W)
+        else:
             pil_img = Image.fromarray(img.squeeze(), mode="L")
 
         pil_img.save(os.path.join(img_dir, f"sample_{i}_label{label}.png"))
-
-    print(f"[EXPORTED] {num_images} images to {img_dir}")
 
 # -------------------------
 # Main
@@ -63,14 +94,15 @@ def main():
     data = np.load("pathmnist_cleaned.npz")
     X_train, y_train = data["train_images"], data["train_labels"]
 
-    # Partition into 20 clients
-    client_indices = partition_clients(X_train, y_train, num_clients=20)
+    # Partition into aligned clients
+    client_indices = partition_clients_aligned(X_train, y_train, num_clients=20)
 
-    # Save each client
+    print("\n[CLIENT Labeling] Placing labels across clients:\n")
     for cid, idxs in enumerate(client_indices):
-        save_client_data(cid, X_train[idxs], y_train[idxs], OUT_DIR, num_images=50)
+        X_client, y_client = X_train[idxs], y_train[idxs]
+        save_client_data(cid, X_client, y_client, OUT_DIR, num_images=45) # Nice number % 9
 
-    print("[DONE] All client datasets saved in clients_data/")
+    print("\n[DONE] All client datasets saved in clients_data/")
 
 if __name__ == "__main__":
     main()
