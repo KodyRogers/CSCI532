@@ -1,0 +1,1 @@
+To Run this code first run clean_data.py then convert_clients.py
