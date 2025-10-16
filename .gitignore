@@ -2,3 +2,13 @@ clients_data
 __pycache__
 pathmnist_cleaned.npz
 pathmnist.npz
+/pathmnist/bin/*
+/pathmnist/data
+/pathmnist/models
+/pathmnist/include/*
+/pathmnist/lib/*
+/pathmnist/lib64/*
+/pathmnist/share
+*.pt 
+pyvenv.cfg
+final_model.pt
